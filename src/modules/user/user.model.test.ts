@@ -1,4 +1,5 @@
 import { faker } from '@faker-js/faker';
+import mongoose from 'mongoose';
 import { NewCreatedUser } from './user.interfaces';
 import User from './user.model';
 
@@ -7,6 +8,7 @@ describe('User model', () => {
     let newUser: NewCreatedUser;
     beforeEach(() => {
       newUser = {
+        _id: new mongoose.Types.ObjectId(),
         name: faker.name.findName(),
         email: faker.internet.email().toLowerCase(),
         password: 'password1',

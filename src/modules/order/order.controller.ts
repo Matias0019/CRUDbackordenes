@@ -6,10 +6,31 @@ import ApiError from '../errors/ApiError';
 import pick from '../utils/pick';
 import { IOptions } from '../paginate/paginate';
 import * as orderService from './order.service';
+import axios from 'axios';
 
 export const createOrder = catchAsync(async (req: Request, res: Response) => {
   req.body.user = req.user._id
   const order = await orderService.createOrder(req.body);
+  axios({
+    method:'POST',
+    url: 'http://localhost:3000/v1/orders',
+    headers: {authorization:req.headers.authorization},
+    data: {
+      _id: order._id,
+      address: order.address,
+      country:order.country,
+      phone: order.phone,
+      total: order.total,
+      product: order.product
+    },
+  }).then(res => {
+    if (res.status === 200) {
+      console.log('Orden Replicada')           
+    }
+  })
+  .catch(e => {
+    console.log(e+'Error en replicacion de la orden')
+  })
   res.status(httpStatus.CREATED).send(order);
 });
 
@@ -33,13 +54,48 @@ export const getOrder = catchAsync(async (req: Request, res: Response) => {
 export const updateOrder = catchAsync(async (req: Request, res: Response) => {
   if (typeof req.params['orderId'] === 'string') {
     const order = await orderService.updateOrderById(new mongoose.Types.ObjectId(req.params['orderId']), req.body);
+   
+    axios({
+      method:'PATCH',
+      url: (`http://localhost:3000/v1/orders/${req.params['orderId']}`),
+      headers: {authorization:req.headers.authorization},
+      data: {
+        address: order?.address,
+        country:order?.country,
+        phone: order?.phone,
+        total: order?.total,
+        product: order?.product
+      },
+    }).then(res => {
+      if (res.status === 200) {
+        console.log('Orden moficada')           
+      }
+    })
+    .catch(e => {
+      console.log(e+'Error en modificacion de la orden')
+    })
     res.send(order);
   }
+  
 });
 
 export const deleteOrder = catchAsync(async (req: Request, res: Response) => {
   if (typeof req.params['orderId'] === 'string') {
     await orderService.deleteOrderById(new mongoose.Types.ObjectId(req.params['orderId']));
+    axios({
+      method:'DELETE',
+      url: (`http://localhost:3000/v1/orders/${req.params['orderId']}`),
+      headers: {authorization:req.headers.authorization},
+      data: {
+      },
+    }).then(res => {
+      if (res.status === 200) {
+        console.log('Orden Eliminado')           
+      }
+    })
+    .catch(e => {
+      console.log(e+'Error en la eliminacion de la orden')
+    })
     res.status(httpStatus.NO_CONTENT).send();
   }
 });

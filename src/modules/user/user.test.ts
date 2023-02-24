@@ -59,6 +59,7 @@ describe('User routes', () => {
 
     beforeEach(() => {
       newUser = {
+        _id: new mongoose.Types.ObjectId(),
         name: faker.name.findName(),
         email: faker.internet.email().toLowerCase(),
         password: 'password1',
