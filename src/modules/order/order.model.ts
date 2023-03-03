@@ -3,30 +3,15 @@ import Schema from 'mongoose';
 import toJSON from '../toJSON/toJSON';
 import paginate from '../paginate/paginate';
 import { IOrderDoc, IOrderModel } from './order.interfaces';
+import { Cart } from '../cart';
 
 const orderSchema = new mongoose.Schema<IOrderDoc, IOrderModel>(
   {
-    address: {
-      type: String,
+    carts: {
+      type: [Cart.schema],
+      ref: 'Carts',
       required: true,
     },
-    country: {
-      type: String,
-      required: true,
-    },
-    phone: {
-      type: Number,
-      required: true,
-    },
-    total: {
-      type: Number,
-      required: true,
-    },
-    product: [{
-      type: Schema.Types.ObjectId,
-      ref: 'Product',
-      required: true,
-    }],
     user: {
       type: Schema.Types.ObjectId,
       ref: 'User',

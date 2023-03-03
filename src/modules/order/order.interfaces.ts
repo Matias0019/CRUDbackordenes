@@ -1,12 +1,9 @@
 import { Document, Model, ObjectId } from "mongoose";
+import { ICart } from "../cart/cart.interfaces";
 import { QueryResult } from "../paginate/paginate";
 
 export interface IOrder {
-    address: string;
-    country: string;
-    phone: number;
-    total: number;
-    product: Array<ObjectId>;
+    carts: Array<ICart>;
     user: ObjectId;
 }
 

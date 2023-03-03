@@ -3,11 +3,7 @@ import { objectId } from '../validate/custom.validation';
 import { IOrder } from './order.interfaces';
 
 const createOrderBody: Record<keyof IOrder, any> = {
-  address: Joi.string().required(),
-  country: Joi.string().required(),
-  phone: Joi.number().required(),
-  total: Joi.number().required(),
-  product: Joi.array(),
+  carts: Joi.array(),
   user: Joi.string().custom(objectId),
 };
 
@@ -36,11 +32,7 @@ export const updateOrder = {
   }),
   body: Joi.object()
     .keys({
-      address: Joi.string().required(),
-      country: Joi.string().required(),
-      phone: Joi.number().required(),
-      total: Joi.number().required(),
-      product: Joi.array(),
+      carts: Joi.array(),
     })
     .min(1),
 };

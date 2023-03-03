@@ -7,30 +7,55 @@ import pick from '../utils/pick';
 import { IOptions } from '../paginate/paginate';
 import * as orderService from './order.service';
 import axios from 'axios';
+import * as amqp from 'amqplib'
+
+var channel: amqp.Channel, connection;
+var queue = 'order'
+
+async function connect() {
+  const amqpServer = "amqp://localhost:5672";
+  connection = await amqp.connect(amqpServer);
+  channel = await connection.createChannel();
+  await channel.assertQueue("order");
+}
+connect();
 
 export const createOrder = catchAsync(async (req: Request, res: Response) => {
   req.body.user = req.user._id
   const order = await orderService.createOrder(req.body);
-  axios({
-    method:'POST',
-    url: 'http://localhost:3000/v1/orders',
-    headers: {authorization:req.headers.authorization},
-    data: {
-      _id: order._id,
-      address: order.address,
-      country:order.country,
-      phone: order.phone,
-      total: order.total,
-      product: order.product
-    },
-  }).then(res => {
-    if (res.status === 200) {
-      console.log('Orden Replicada')           
-    }
-  })
-  .catch(e => {
-    console.log(e+'Error en replicacion de la orden')
-  })
+  const carts = order.carts;
+  // axios({
+  //   method:'POST',
+  //   url: 'http://localhost:3000/v1/orders',
+  //   headers: {authorization:req.headers.authorization},
+  //   data: {
+  //     _id: order._id,
+  //     address: order.address,
+  //     country:order.country,
+  //     phone: order.phone,
+  //     total: order.total,
+  //     product: order.product
+  //   },
+  // }).then(res => {
+  //   if (res.status === 200) {
+  //     console.log('Orden Replicada')           
+  //   }
+  // })
+  // .catch(e => {
+  //   console.log(e+'Error en replicacion de la orden')
+  // })
+  const sent = await channel.sendToQueue(
+    "order",
+    Buffer.from(
+        JSON.stringify({
+          carts
+        })
+    )
+);
+  sent
+      ? console.log(`Sent message to "${queue}" queue`, req.body)
+      : console.log(`Fails sending message to "${queue}" queue`, req.body)
+
   res.status(httpStatus.CREATED).send(order);
 });
 
@@ -60,11 +85,7 @@ export const updateOrder = catchAsync(async (req: Request, res: Response) => {
       url: (`http://localhost:3000/v1/orders/${req.params['orderId']}`),
       headers: {authorization:req.headers.authorization},
       data: {
-        address: order?.address,
-        country:order?.country,
-        phone: order?.phone,
-        total: order?.total,
-        product: order?.product
+        carts: order?.carts
       },
     }).then(res => {
       if (res.status === 200) {
