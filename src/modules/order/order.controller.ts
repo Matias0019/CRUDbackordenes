@@ -6,6 +6,7 @@ import ApiError from '../errors/ApiError';
 import pick from '../utils/pick';
 import { IOptions } from '../paginate/paginate';
 import * as orderService from './order.service';
+import { productService } from '../product'
 import axios from 'axios';
 import * as amqp from 'amqplib'
 
@@ -20,10 +21,59 @@ async function connect() {
 }
 connect();
 
+export async function checkStock (product: any, quantity: number) {
+  let productData = await productService.getProductById(new mongoose.Types.ObjectId(product))
+  if (productData != null){
+    if (productData.stock < quantity){
+      return false
+      }
+      return true
+}
+return false
+}
+
+export async function substractStock (product: any, quantity: any) {
+  if (await checkStock(product, quantity)){
+  let productData = await productService.getProductById(new mongoose.Types.ObjectId(product))
+  if (productData != null){
+    productData.stock -= quantity
+    const updateProduct = await productService.updateProductById(new mongoose.Types.ObjectId(product), productData);
+    console.log('Stock modificado') 
+    return updateProduct
+  }
+  }
+  console.log(`El producto ${product} no cuenta con stock suficiente`)
+  return false
+}
+
 export const createOrder = catchAsync(async (req: Request, res: Response) => {
   req.body.user = req.user._id
   const order = await orderService.createOrder(req.body);
   const carts = order.carts;
+  const productFinal = Array<any>;
+  for (let item of carts){
+    if(await substractStock(item.productId,item.quantity) == false){
+      console.log('Ocurrio un error al actualizar el stock')
+      console.log('Producto: ' + item.productId, 'Cantidad: ' + item.quantity)
+      return
+    } else {
+      productFinal.prototype.push(item)
+    }
+  }
+//   for (let item of carts){
+//     let product = await productService.getProductById(new mongoose.Types.ObjectId(item.productId));
+//     if (product != null){
+//       if (product.stock < item.quantity){
+//         console.log(`El producto ${item.productId} no cuenta con stock suficiente, no se resto la cantidad ${item.quantity}`)
+//       }
+//       product.stock -= item.quantity
+//       const updateProduct = await productService.updateProductById(new mongoose.Types.ObjectId(item.productId), product);
+//       console.log('Stock modificado')
+//       if (updateProduct != null) {
+//       return updateProduct
+//       }
+//     }
+// }
   // axios({
   //   method:'POST',
   //   url: 'http://localhost:3000/v1/orders',
@@ -48,7 +98,7 @@ export const createOrder = catchAsync(async (req: Request, res: Response) => {
     "order",
     Buffer.from(
         JSON.stringify({
-          carts
+          productFinal
         })
     )
 );
