@@ -50,15 +50,16 @@ export const createOrder = catchAsync(async (req: Request, res: Response) => {
   req.body.user = req.user._id
   const order = await orderService.createOrder(req.body);
   const carts = order.carts;
-  const productFinal = Array<any>;
+  //const productosOk: object[] = [];
   for (let item of carts){
     if(await substractStock(item.productId,item.quantity) == false){
       console.log('Ocurrio un error al actualizar el stock')
       console.log('Producto: ' + item.productId, 'Cantidad: ' + item.quantity)
       return
-    } else {
-      productFinal.prototype.push(item)
     }
+    //  else {
+    //   productosOk.push(item);
+    // }
   }
 //   for (let item of carts){
 //     let product = await productService.getProductById(new mongoose.Types.ObjectId(item.productId));
@@ -98,13 +99,13 @@ export const createOrder = catchAsync(async (req: Request, res: Response) => {
     "order",
     Buffer.from(
         JSON.stringify({
-          productFinal
+          carts
         })
     )
 );
   sent
-      ? console.log(`Sent message to "${queue}" queue`, req.body)
-      : console.log(`Fails sending message to "${queue}" queue`, req.body)
+      ? console.log(`Sent message to "${queue}" queue`, carts)
+      : console.log(`Fails sending message to "${queue}" queue`, carts)
 
   res.status(httpStatus.CREATED).send(order);
 });
