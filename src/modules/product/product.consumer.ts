@@ -3,11 +3,32 @@ import httpStatus from 'http-status'
 import mongoose from 'mongoose'
 import { productService } from '.'
 import { ApiError } from '../errors'
-import Pulsar from 'pulsar-client'
+//import Pulsar from 'pulsar-client'
+import { Kafka } from 'kafkajs';
 
 const queuecreate = 'create-product'
 const queueupdate = 'update-product'
 const queuedelete = 'delete-product'
+
+run().then(() => console.log("Done"), err => console.log(err));
+
+async function run() {
+    const kafka = new Kafka({ brokers: ["localhost:9092"] });
+    const consumer = kafka.consumer({ groupId: "" + Date.now() });
+  
+    await consumer.connect();
+  
+    await consumer.subscribe({ topic: "product", fromBeginning: true });
+    await consumer.run({ 
+      eachMessage: async (data:any) => {
+        //console.log(data.message.value.toString("utf8"));
+        const content = JSON.parse(data.message.value.toString("utf8"));
+        content._id = content.id 
+        const product = await productService.createProduct(content);
+        console.log(product);
+      }
+    });
+  }
 
 export async function subscriber1(){
     const connection = await amqp.connect('amqp://localhost')
@@ -26,32 +47,31 @@ export async function subscriber1(){
 
     });
 
-    (async () => {
-        // Create a client
-        const client = new Pulsar.Client({
-          serviceUrl: 'pulsar://localhost:6650',
-        });
-      
-        // Create a consumer
-        const consumer = await client.subscribe({
-          topic: 'create-product',
-          subscription: 'create-product',
-          subscriptionType: 'Exclusive',
-        });
-      
-        // Receive messages
-          const msg = await consumer.receive();
-          const content = JSON.parse(msg.getData().toString());
-          console.log(msg.getData().toString());
-          content.product._id = content.product.id
-          const product = await productService.createProduct(content.product);
-          console.log(product);
-          consumer.acknowledge(msg);
-        
-      
-        await consumer.close();
-        await client.close();
-      })();
+
+
+// (async () => {
+//   // Create a client
+//   const client = new Pulsar.Client({
+//     serviceUrl: 'pulsar://localhost:6650',
+//   });
+
+//   // Create a consumer
+//   const consumer = await client.subscribe({
+//     topic: 'my-topic1',
+//     subscription: 'my-subscription',
+//     subscriptionType: 'Exclusive',
+//   });
+
+//   // Receive messages
+//   for (let i = 0; i < 10; i += 1) {
+//     const msg = await consumer.receive();
+//     console.log(msg.getData().toString());
+//     consumer.acknowledge(msg);
+//   }
+
+//   await consumer.close();
+//   await client.close();
+// })();
 }
 
 subscriber1().catch((error)=>{
